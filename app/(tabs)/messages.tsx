@@ -2,49 +2,43 @@ import { useEffect, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../supabase';
 
-type Match = {
-  id: number;
-  user1: string;
-  user2: string;
-};
-
-type Message = {
-  id: number;
-  contenu: string;
-  expediteur: string;
-  destinataire: string;
-  created_at: string;
-};
+type Match = { id: number; user1: string; user2: string; };
+type Message = { id: number; contenu: string; expediteur: string; destinataire: string; created_at: string; };
+type Profil = { prenom: string; email: string; photo: string; };
 
 export default function MessagesScreen() {
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<(Match & { prenom: string })[]>([]);
   const [matchActif, setMatchActif] = useState<string | null>(null);
+  const [prenomActif, setPrenomActif] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [nouveau, setNouveau] = useState('');
   const [monEmail, setMonEmail] = useState('');
 
   useEffect(() => {
-    getUser();
+    init();
   }, []);
 
-  const getUser = async () => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) {
-      setMonEmail(data.user.email || '');
-      chargerMatches(data.user.email || '');
+  const init = async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    const email = userData.user?.email || '';
+    setMonEmail(email);
+
+    const { data: profilsData } = await supabase.from('profils').select('*');
+    const { data: matchesData } = await supabase.from('matches').select('*').or(`user1.eq.${email},user2.eq.${email}`);
+
+    if (matchesData && profilsData) {
+      const matchesAvecPrenoms = matchesData.map(match => {
+        const autreEmail = match.user1 === email ? match.user2 : match.user1;
+        const profil = profilsData.find((p: Profil) => p.email === autreEmail);
+        return { ...match, prenom: profil ? profil.prenom : autreEmail.split('@')[0] };
+      });
+      setMatches(matchesAvecPrenoms);
     }
   };
 
-  const chargerMatches = async (email: string) => {
-    const { data } = await supabase
-      .from('matches')
-      .select('*')
-      .or(`user1.eq.${email},user2.eq.${email}`);
-    if (data) setMatches(data);
-  };
-
-  const ouvrirConversation = async (autreUser: string) => {
+  const ouvrirConversation = async (autreUser: string, prenom: string) => {
     setMatchActif(autreUser);
+    setPrenomActif(prenom);
     const { data } = await supabase
       .from('messages')
       .select('*')
@@ -55,13 +49,9 @@ export default function MessagesScreen() {
 
   const envoyerMessage = async () => {
     if (!nouveau.trim() || !matchActif) return;
-    await supabase.from('messages').insert([{
-      contenu: nouveau,
-      expediteur: monEmail,
-      destinataire: matchActif,
-    }]);
+    await supabase.from('messages').insert([{ contenu: nouveau, expediteur: monEmail, destinataire: matchActif }]);
     setNouveau('');
-    ouvrirConversation(matchActif);
+    ouvrirConversation(matchActif, prenomActif);
   };
 
   if (matchActif) {
@@ -71,9 +61,8 @@ export default function MessagesScreen() {
           <TouchableOpacity onPress={() => setMatchActif(null)}>
             <Text style={styles.retour}>← Retour</Text>
           </TouchableOpacity>
-          <Text style={styles.headerNom}>{matchActif.split('@')[0]}</Text>
+          <Text style={styles.headerNom}>{prenomActif}</Text>
         </View>
-
         <FlatList
           data={messages}
           keyExtractor={(item) => item.id.toString()}
@@ -87,14 +76,8 @@ export default function MessagesScreen() {
             );
           }}
         />
-
         <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Écris un message..."
-            value={nouveau}
-            onChangeText={setNouveau}
-          />
+          <TextInput style={styles.input} placeholder="Écris un message..." value={nouveau} onChangeText={setNouveau} />
           <TouchableOpacity style={styles.boutonEnvoyer} onPress={envoyerMessage}>
             <Text style={styles.boutonTexte}>→</Text>
           </TouchableOpacity>
@@ -115,11 +98,11 @@ export default function MessagesScreen() {
           renderItem={({ item }) => {
             const autreUser = item.user1 === monEmail ? item.user2 : item.user1;
             return (
-              <TouchableOpacity style={styles.matchItem} onPress={() => ouvrirConversation(autreUser)}>
+              <TouchableOpacity style={styles.matchItem} onPress={() => ouvrirConversation(autreUser, item.prenom)}>
                 <View style={styles.matchAvatar}>
-                  <Text style={styles.matchAvatarTexte}>{autreUser[0].toUpperCase()}</Text>
+                  <Text style={styles.matchAvatarTexte}>{item.prenom[0].toUpperCase()}</Text>
                 </View>
-                <Text style={styles.matchNom}>{autreUser.split('@')[0]}</Text>
+                <Text style={styles.matchNom}>{item.prenom}</Text>
               </TouchableOpacity>
             );
           }}
