@@ -21,7 +21,7 @@ export default function LoginScreen() {
       if (error) Alert.alert('Erreur', error.message);
       else {
         Alert.alert('Compte créé !', 'Tu peux maintenant créer ton profil.');
-        router.push('/profil');
+        router.push('/creer-profil');
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });

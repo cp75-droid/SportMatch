@@ -1,110 +1,47 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../supabase';
 
-const SPORTS = ['🎾 Padel', '🏃 Running', '🚴 Vélo', '🏊 Natation', '⚽ Foot', '🏀 Basket'];
-const NIVEAUX = ['Débutant', 'Intermédiaire', 'Avancé'];
-
-export default function ProfilScreen() {
+export default function MonProfilScreen() {
   const router = useRouter();
-  const [prenom, setPrenom] = useState('');
-  const [ville, setVille] = useState('');
-  const [sportChoisi, setSportChoisi] = useState('');
-  const [niveauChoisi, setNiveauChoisi] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
 
-  const sauvegarderProfil = async () => {
-    if (!prenom || !ville || !sportChoisi || !niveauChoisi) {
-      Alert.alert('Oups !', 'Remplis tous les champs avant de continuer.');
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase
-      .from('profils')
-      .insert([{ prenom, ville, sport: sportChoisi, niveau: niveauChoisi }]);
-    setLoading(false);
-    if (error) {
-      Alert.alert('Erreur', error.message);
-    } else {
-      router.push('/match');
-    }
+  useEffect(() => {
+    getUser();
+  }, []);
+
+  const getUser = async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) setEmail(data.user.email || '');
+  };
+
+  const seDeconnecter = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.titre}>Crée ton profil</Text>
-      <Text style={styles.sousTitre}>Dis-nous qui tu es 👋</Text>
-
-      <Text style={styles.label}>Ton prénom</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ex: Camille"
-        value={prenom}
-        onChangeText={setPrenom}
-      />
-
-      <Text style={styles.label}>Ta ville</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ex: Paris"
-        value={ville}
-        onChangeText={setVille}
-      />
-
-      <Text style={styles.label}>Ton sport</Text>
-      <View style={styles.grille}>
-        {SPORTS.map((sport) => (
-          <TouchableOpacity
-            key={sport}
-            style={[styles.chip, sportChoisi === sport && styles.chipActif]}
-            onPress={() => setSportChoisi(sport)}
-          >
-            <Text style={[styles.chipTexte, sportChoisi === sport && styles.chipTexteActif]}>
-              {sport}
-            </Text>
-          </TouchableOpacity>
-        ))}
+    <View style={styles.container}>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarTexte}>{email ? email[0].toUpperCase() : '?'}</Text>
       </View>
+      <Text style={styles.email}>{email}</Text>
+      <Text style={styles.sousTitre}>Connectée ✓</Text>
 
-      <Text style={styles.label}>Ton niveau</Text>
-      <View style={styles.grille}>
-        {NIVEAUX.map((niveau) => (
-          <TouchableOpacity
-            key={niveau}
-            style={[styles.chip, niveauChoisi === niveau && styles.chipActif]}
-            onPress={() => setNiveauChoisi(niveau)}
-          >
-            <Text style={[styles.chipTexte, niveauChoisi === niveau && styles.chipTexteActif]}>
-              {niveau}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <TouchableOpacity 
-        style={[styles.bouton, loading && { opacity: 0.6 }]} 
-        onPress={sauvegarderProfil}
-        disabled={loading}
-      >
-        <Text style={styles.boutonTexte}>{loading ? 'Sauvegarde...' : 'Continuer →'}</Text>
+      <TouchableOpacity style={styles.boutonDeconnexion} onPress={seDeconnecter}>
+        <Text style={styles.boutonTexte}>Se déconnecter</Text>
       </TouchableOpacity>
-
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 24 },
-  titre: { fontSize: 28, fontWeight: 'bold', color: '#FF6B6B', marginTop: 48, marginBottom: 4 },
-  sousTitre: { fontSize: 16, color: '#888', marginBottom: 32 },
-  label: { fontSize: 14, fontWeight: 'bold', color: '#333', marginBottom: 8, marginTop: 16 },
-  input: { borderWidth: 1.5, borderColor: '#eee', borderRadius: 12, padding: 14, fontSize: 16, color: '#333' },
-  grille: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { borderWidth: 1.5, borderColor: '#eee', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16 },
-  chipActif: { backgroundColor: '#FF6B6B', borderColor: '#FF6B6B' },
-  chipTexte: { color: '#555', fontSize: 14 },
-  chipTexteActif: { color: 'white', fontWeight: 'bold' },
-  bouton: { backgroundColor: '#FF6B6B', padding: 18, borderRadius: 30, alignItems: 'center', marginTop: 32, marginBottom: 48 },
-  boutonTexte: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  container: { flex: 1, backgroundColor: '#f8f8f8', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FF6B6B', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  avatarTexte: { fontSize: 32, fontWeight: 'bold', color: 'white' },
+  email: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 4 },
+  sousTitre: { fontSize: 14, color: '#4A7C59', marginBottom: 48 },
+  boutonDeconnexion: { borderWidth: 2, borderColor: '#FF6B6B', paddingVertical: 16, paddingHorizontal: 48, borderRadius: 30 },
+  boutonTexte: { color: '#FF6B6B', fontSize: 16, fontWeight: 'bold' },
 });

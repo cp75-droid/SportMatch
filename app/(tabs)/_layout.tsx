@@ -17,42 +17,13 @@ export default function TabLayout() {
         headerShown: false,
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Accueil',
-          tabBarIcon: ({ color }) => (
-            <Text style={{ fontSize: 20, color }}>🏠</Text>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="match"
-        options={{
-          title: 'Match',
-          tabBarIcon: ({ color }) => (
-            <Text style={{ fontSize: 20, color }}>⚡</Text>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="messages"
-        options={{
-          title: 'Messages',
-          tabBarIcon: ({ color }) => (
-            <Text style={{ fontSize: 20, color }}>💬</Text>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profil"
-        options={{
-          title: 'Profil',
-          tabBarIcon: ({ color }) => (
-            <Text style={{ fontSize: 20, color }}>👤</Text>
-          ),
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: 'Accueil', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> }} />
+      <Tabs.Screen name="match" options={{ title: 'Match', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚡</Text> }} />
+      <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💬</Text> }} />
+      <Tabs.Screen name="profil" options={{ title: 'Profil', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text> }} />
+      <Tabs.Screen name="login" options={{ href: null }} />
+      <Tabs.Screen name="explore" options={{ href: null }} />
+      <Tabs.Screen name="creer-profil" options={{ href: null }} />
     </Tabs>
   );
 }
