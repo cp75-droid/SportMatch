@@ -111,25 +111,23 @@ export default function MonProfilScreen() {
       <Text style={styles.prenom}>{prenom || '...'}</Text>
       <Text style={styles.email}>{email}</Text>
 
-      <View style={styles.infos}>
-        <View style={styles.infoItem}>
-          <Text style={styles.infoLabel}>📍 Ville</Text>
-          <Text style={styles.infoValeur}>{ville || '—'}</Text>
-        </View>
-        <View style={styles.separateur} />
-        <View style={styles.infoItem}>
-          <Text style={styles.infoLabel}>🏅 Sport</Text>
-          <Text style={styles.infoValeur}>{sport || '—'}</Text>
-        </View>
-        <View style={styles.separateur} />
-        <View style={styles.infoItem}>
-          <Text style={styles.infoLabel}>⭐ Niveau</Text>
-          <Text style={styles.infoValeur}>{niveau || '—'}</Text>
-        </View>
-      </View>
+      <View style={styles.infoItem}>
+  <Text style={styles.infoLabel}>Ville</Text>
+  <Text style={styles.infoValeur}>📍 {ville || '—'}</Text>
+</View>
+<View style={styles.separateur} />
+<View style={styles.infoItem}>
+  <Text style={styles.infoLabel}>Sport</Text>
+  <Text style={styles.infoValeur}>{sport || '—'}</Text>
+</View>
+<View style={styles.separateur} />
+<View style={styles.infoItem}>
+  <Text style={styles.infoLabel}>Niveau</Text>
+  <Text style={styles.infoValeur}>⭐ {niveau || '—'}</Text>
+</View>
 
       <TouchableOpacity style={styles.boutonEdit} onPress={() => setEditing(true)}>
-        <Text style={styles.boutonEditTexte}>Modifier mon profil ✏️</Text>
+        <Text style={styles.boutonEditTexte}>Modifier mon profil </Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.boutonDeconnexion} onPress={seDeconnecter}>
