@@ -13,6 +13,7 @@ export default function MonProfilScreen() {
   const [ville, setVille] = useState('');
   const [sport, setSport] = useState('');
   const [niveau, setNiveau] = useState('');
+  const [bio, setBio] = useState('');
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -35,12 +36,13 @@ export default function MonProfilScreen() {
       setVille(data.ville);
       setSport(data.sport);
       setNiveau(data.niveau);
+      setBio(data.bio || '');
     }
   };
 
   const sauvegarder = async () => {
     setLoading(true);
-    const { error } = await supabase.from('profils').update({ prenom, ville, sport, niveau }).eq('email', email);
+    const { error } = await supabase.from('profils').update({ prenom, ville, sport, niveau, bio }).eq('email', email);
     setLoading(false);
     if (error) Alert.alert('Erreur', error.message);
     else {
@@ -90,7 +92,14 @@ export default function MonProfilScreen() {
             </TouchableOpacity>
           ))}
         </View>
-
+        <Text style={styles.label}>Ta bio</Text>
+        <TextInput
+          style={[styles.input, { height: 100 }]}
+          placeholder="Présente-toi en quelques mots..."
+          value={bio}
+          onChangeText={setBio}
+          multiline
+        />
         <TouchableOpacity style={[styles.boutonSave, loading && { opacity: 0.6 }]} onPress={sauvegarder} disabled={loading}>
           <Text style={styles.boutonSaveTexte}>{loading ? 'Sauvegarde...' : 'Sauvegarder ✓'}</Text>
         </TouchableOpacity>
@@ -125,7 +134,11 @@ export default function MonProfilScreen() {
   <Text style={styles.infoLabel}>Niveau</Text>
   <Text style={styles.infoValeur}>⭐ {niveau || '—'}</Text>
 </View>
-
+{bio ? (
+  <View style={styles.bioContainer}>
+    <Text style={styles.bioTexte}>{bio}</Text>
+  </View>
+) : null}
       <TouchableOpacity style={styles.boutonEdit} onPress={() => setEditing(true)}>
         <Text style={styles.boutonEditTexte}>Modifier mon profil </Text>
       </TouchableOpacity>
@@ -164,4 +177,6 @@ const styles = StyleSheet.create({
   boutonSaveTexte: { color: 'white', fontSize: 16, fontWeight: 'bold' },
   boutonAnnuler: { borderWidth: 2, borderColor: '#eee', padding: 16, borderRadius: 30, alignItems: 'center', marginBottom: 48 },
   boutonAnnulerTexte: { color: '#888', fontSize: 16 },
+  bioContainer: { backgroundColor: 'white', borderRadius: 12, padding: 16, width: '100%', marginBottom: 16 },
+bioTexte: { fontSize: 14, color: '#555', lineHeight: 22, textAlign: 'center' },
 });
