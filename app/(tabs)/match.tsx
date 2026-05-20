@@ -73,7 +73,14 @@ export default function MatchScreen() {
       await supabase.from('swipes').insert([{ swipeur: monEmail, cible, direction: 'droite' }]);
       const { data: swipeRetour } = await supabase.from('swipes').select('*').eq('swipeur', cible).eq('cible', monEmail).eq('direction', 'droite');
       if (swipeRetour && swipeRetour.length > 0) {
-        await supabase.from('matches').insert([{ user1: monEmail, user2: cible }]);
+  const { data: matchExistant } = await supabase
+    .from('matches')
+    .select('*')
+    .or(`and(user1.eq.${monEmail},user2.eq.${cible}),and(user1.eq.${cible},user2.eq.${monEmail})`);
+  
+  if (!matchExistant || matchExistant.length === 0) {
+    await supabase.from('matches').insert([{ user1: monEmail, user2: cible }]);
+  }
         setDernierAction('🎉 Nouveau match !');
         setTimeout(() => router.push('/messages'), 1500);
         return;

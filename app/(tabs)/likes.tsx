@@ -1,13 +1,6 @@
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../supabase';
-
-type Swipe = {
-  id: number;
-  swipeur: string;
-  cible: string;
-  direction: string;
-};
 
 type Profil = {
   prenom: string;
@@ -37,13 +30,33 @@ export default function LikesScreen() {
 
     if (!swipes || swipes.length === 0) return;
 
-    const emails = swipes.map((s: Swipe) => s.swipeur);
+    const emails = swipes.map((s: any) => s.swipeur);
     const { data: profils } = await supabase
       .from('profils')
       .select('*')
       .in('email', emails);
 
     if (profils) setLikes(profils);
+  };
+
+  const likerEnRetour = async (autreEmail: string, autrePrenom: string) => {
+    await supabase.from('swipes').insert([{
+      swipeur: monEmail,
+      cible: autreEmail,
+      direction: 'droite',
+    }]);
+
+    const { data: matchExistant } = await supabase
+      .from('matches')
+      .select('*')
+      .or(`and(user1.eq.${monEmail},user2.eq.${autreEmail}),and(user1.eq.${autreEmail},user2.eq.${monEmail})`);
+
+    if (!matchExistant || matchExistant.length === 0) {
+      await supabase.from('matches').insert([{ user1: monEmail, user2: autreEmail }]);
+    }
+
+    Alert.alert('🎉 Match !', `Tu as matché avec ${autrePrenom} !`);
+    setLikes(prev => prev.filter(p => p.email !== autreEmail));
   };
 
   return (
@@ -64,7 +77,12 @@ export default function LikesScreen() {
                 <Text style={styles.prenom}>{item.prenom}</Text>
                 <Text style={styles.detail}>{item.sport} · {item.ville}</Text>
               </View>
-              <Text style={styles.heart}>❤️</Text>
+              <TouchableOpacity
+                style={styles.boutonLike}
+                onPress={() => likerEnRetour(item.email, item.prenom)}
+              >
+                <Text style={styles.boutonLikeTexte}>♥ Liker</Text>
+              </TouchableOpacity>
             </View>
           )}
         />
@@ -83,5 +101,6 @@ const styles = StyleSheet.create({
   info: { flex: 1 },
   prenom: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 2 },
   detail: { fontSize: 13, color: '#888' },
-  heart: { fontSize: 20 },
+  boutonLike: { backgroundColor: '#FF6B6B', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
+  boutonLikeTexte: { color: 'white', fontWeight: 'bold', fontSize: 14 },
 });

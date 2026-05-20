@@ -1,6 +1,9 @@
+import { decode } from 'base64-arraybuffer';
+import * as FileSystem from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../supabase';
 
 const SPORTS = ['🎾 Padel', '🏃 Running', '🚴 Vélo', '🏊 Natation', '⚽ Foot', '🏀 Basket'];
@@ -16,21 +19,64 @@ export default function MonProfilScreen() {
   const [bio, setBio] = useState('');
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [photo, setPhoto] = useState('');
+
+const choisirPhoto = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    quality: 0.5,
+  });
+  if (!result.canceled) {
+    setPhoto(result.assets[0].uri);
+    uploaderPhoto(result.assets[0].uri);
+  }
+};
+
+const uploaderPhoto = async (uri: string) => {
+  const fileName = `avatar_${Date.now()}.jpg`;
+  
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  
+  const arrayBuffer = decode(base64);
+  
+  const { data, error } = await supabase.storage
+    .from('avatars')
+    .upload(fileName, arrayBuffer, { contentType: 'image/jpeg' });
+
+  if (!error) {
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+    await supabase.from('profils').update({ photo: urlData.publicUrl }).eq('email', email);
+    setPhoto(urlData.publicUrl);
+  }
+};
 
   useEffect(() => {
     getUser();
   }, []);
 
   const getUser = async () => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) {
-      setEmail(data.user.email || '');
-      chargerProfil(data.user.email || '');
-    }
-  };
+  let email = '';
+  const { data: sessionData } = await supabase.auth.getSession();
+  email = sessionData.session?.user?.email || '';
+  
+  if (!email) {
+    const { data: userData } = await supabase.auth.getUser();
+    email = userData.user?.email || '';
+  }
+  
+  if (email) {
+    setEmail(email);
+    chargerProfil(email);
+  }
+};
 
   const chargerProfil = async (email: string) => {
     const { data } = await supabase.from('profils').select('*').eq('email', email).single();
+    console.log('email cherché:', email);
+console.log('data trouvée:', data);
     if (data) {
       setPrenom(data.prenom);
       setVille(data.ville);
@@ -60,6 +106,15 @@ export default function MonProfilScreen() {
     return (
       <ScrollView style={styles.container}>
         <Text style={styles.titreEdit}>Modifier mon profil</Text>
+        <TouchableOpacity style={styles.photoBtn} onPress={choisirPhoto}>
+  {photo ? (
+    <Image source={{ uri: photo }} style={styles.photoBtnImg} />
+  ) : (
+    <View style={styles.photoBtnPlaceholder}>
+      <Text style={styles.photoBtnTexte}>📷 Ajouter une photo</Text>
+    </View>
+  )}
+</TouchableOpacity>
 
         <Text style={styles.label}>Prénom</Text>
         <TextInput style={styles.input} value={prenom} onChangeText={setPrenom} />
@@ -113,9 +168,13 @@ export default function MonProfilScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarTexte}>{prenom ? prenom[0].toUpperCase() : '?'}</Text>
-      </View>
+      {photo ? (
+  <Image source={{ uri: photo }} style={styles.avatarPhoto} />
+) : (
+  <View style={styles.avatar}>
+    <Text style={styles.avatarTexte}>{prenom ? prenom[0].toUpperCase() : '?'}</Text>
+  </View>
+)}
 
       <Text style={styles.prenom}>{prenom || '...'}</Text>
       <Text style={styles.email}>{email}</Text>
@@ -179,4 +238,9 @@ const styles = StyleSheet.create({
   boutonAnnulerTexte: { color: '#888', fontSize: 16 },
   bioContainer: { backgroundColor: 'white', borderRadius: 12, padding: 16, width: '100%', marginBottom: 16 },
 bioTexte: { fontSize: 14, color: '#555', lineHeight: 22, textAlign: 'center' },
+photoBtn: { alignSelf: 'center', marginBottom: 24, marginTop: 8 },
+photoBtnImg: { width: 100, height: 100, borderRadius: 50 },
+photoBtnPlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#f0f0f0', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FF6B6B', borderStyle: 'dashed' },
+photoBtnTexte: { fontSize: 11, color: '#FF6B6B', textAlign: 'center' },
+avatarPhoto: { width: 100, height: 100, borderRadius: 50, marginBottom: 16, alignSelf: 'center' },
 });
